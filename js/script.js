@@ -140,6 +140,7 @@ function registerEvent(eventData) {
   const loadingMessage = document.getElementById("loading-message");
   loadingMessage.textContent = "Registrando evento...";
 
+  // Simulamos el registro en Google Sheets
   events.push(eventData);
   loadingMessage.textContent = "Evento registrado. Recargando tabla...";
 
