@@ -58,9 +58,15 @@ function formatDate(dateString) {
 // Función para calcular duración entre "Se cortó" y "Volvió"
 function calculateDuration(date, time, type) {
   if (type === "Volvió") {
-    const startEvent = events.find(e => e.Fecha === date && e.Evento === "Se cortó" && new Date(e.Hora) < new Date(time));
-    if (startEvent) {
-      const startTime = new Date(`${date}T${startEvent.Hora}`);
+    // Busca el evento "Se cortó" más reciente antes de este "Volvió"
+    const startEvents = events.filter(e =>
+      e.Fecha === date &&
+      e.Evento === "Se cortó" &&
+      new Date(`${date}T${e.Hora}`) < new Date(`${date}T${time}`)
+    );
+    if (startEvents.length > 0) {
+      const lastStartEvent = startEvents[startEvents.length - 1];
+      const startTime = new Date(`${date}T${lastStartEvent.Hora}`);
       const endTime = new Date(`${date}T${time}`);
       const diffMinutes = (endTime - startTime) / (1000 * 60);
       const hours = Math.floor(diffMinutes / 60);
@@ -93,7 +99,7 @@ function initCharts() {
     },
   });
 
-  // Gráfico de líneas (duración promedio)
+  // Gráfico de líneas (duración promedio por día)
   const lineCtx = document.getElementById("line-chart").getContext("2d");
   new Chart(lineCtx, {
     type: "line",
@@ -106,11 +112,15 @@ function initCharts() {
           let totalDuration = 0;
           let count = 0;
           cuts.forEach(cut => {
-            const back = events.find(e => e.Fecha === date && e.Evento === "Volvió" && new Date(e.Hora) > new Date(cut.Hora));
+            const back = events.find(e =>
+              e.Fecha === date &&
+              e.Evento === "Volvió" &&
+              new Date(`${date}T${e.Hora}`) > new Date(`${date}T${cut.Hora}`)
+            );
             if (back) {
               const start = new Date(`${date}T${cut.Hora}`);
               const end = new Date(`${date}T${back.Hora}`);
-              totalDuration += (end - start) / (1000 * 60);
+              totalDuration += (end - start) / (1000 * 60); // Duración en minutos
               count++;
             }
           });
@@ -123,6 +133,11 @@ function initCharts() {
     options: {
       responsive: true,
       maintainAspectRatio: false,
+      scales: {
+        y: {
+          beginAtZero: true
+        }
+      }
     },
   });
 
