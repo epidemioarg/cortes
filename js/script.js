@@ -27,10 +27,15 @@ function loadTable() {
             return response.text();
         })
         .then(html => {
-            console.log('Contenido HTML recibido:', html.substring(0, 200) + '...');
+            console.log('Contenido HTML recibido:', html.substring(0, 1000) + '...'); // Mostrar más caracteres
             const parser = new DOMParser();
             const doc = parser.parseFromString(html, 'text/html');
-            const table = doc.querySelector('table');
+            let table = doc.querySelector('table');
+            if (!table) {
+                // Buscar dentro de posibles contenedores (como divs o iframes)
+                const tablesInDivs = doc.querySelectorAll('div table');
+                if (tablesInDivs.length > 0) table = tablesInDivs[0];
+            }
             if (table) {
                 const rows = table.querySelectorAll('tbody tr');
                 const sheetData = [];
@@ -53,7 +58,7 @@ function loadTable() {
                 updateTable();
                 generateCharts(sheetData);
             } else {
-                console.warn('No se encontró tabla en la hoja publicada. Verifica la publicación o el gid.');
+                console.warn('No se encontró tabla en la hoja publicada. Verifica la estructura HTML.');
             }
         })
         .catch(error => console.error('Error al cargar la tabla:', error));
