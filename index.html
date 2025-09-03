@@ -4,305 +4,48 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cortes del servicio</title>
-    <style>
-        body {
-            font-family: 'Arial', sans-serif;
-            background-color: #f0f4f8;
-            margin: 0;
-            padding: 20px;
-            color: #333;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            min-height: 100vh;
-        }
-        h1 {
-            color: #1e3a8a;
-            text-align: center;
-            margin-bottom: 20px;
-        }
-        .button-container {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
-        }
-        button {
-            padding: 10px 20px;
-            font-size: 16px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            background-color: #3b82f6;
-            color: white;
-            transition: background-color 0.3s;
-        }
-        button:hover {
-            background-color: #2563eb;
-        }
-        #se-corto, #agregar-corte {
-            background-color: #ef4444;
-        }
-        #se-corto:hover, #agregar-corte:hover {
-            background-color: #dc2626;
-        }
-        #volvio, #agregar-vuelta {
-            background-color: #22c55e;
-        }
-        #volvio:hover, #agregar-vuelta:hover {
-            background-color: #16a34a;
-        }
-        .form-container {
-            display: none;
-            margin-bottom: 20px;
-            background-color: white;
-            padding: 15px;
-            border-radius: 5px;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-        }
-        .form-container.active {
-            display: block;
-        }
-        .form-group {
-            margin-bottom: 10px;
-        }
-        label {
-            margin-right: 10px;
-        }
-        input, select {
-            padding: 5px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-        }
-        table {
-            width: 100%;
-            max-width: 600px;
-            border-collapse: collapse;
-            background-color: white;
-            border-radius: 8px;
-            overflow: hidden;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-        }
-        th, td {
-            padding: 12px;
-            text-align: left;
-            border-bottom: 1px solid #e5e7eb;
-        }
-        th {
-            background-color: #1e3a8a;
-            color: white;
-        }
-        tr:nth-child(even) {
-            background-color: #f9fafb;
-        }
-        @media (max-width: 480px) {
-            table {
-                font-size: 14px;
-            }
-            button {
-                padding: 8px 16px;
-                font-size: 14px;
-            }
-            h1 {
-                font-size: 1.5em;
-            }
-            .form-container {
-                padding: 10px;
-            }
-        }
-    </style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-    <h1>Cortes del servicio MinSal</h1>
+    <h1>Cortes del servicio</h1>
     <div class="button-container">
         <button id="se-corto">Se cortó</button>
         <button id="volvio">Volvió</button>
-        <button id="agregar-anterior">Agregar corte anterior</button>
+        <button id="add-previous-cut">Agregar corte anterior</button>
     </div>
-    <div id="manual-form" class="form-container">
-        <div class="form-group">
-            <label for="event-type">Evento:</label>
-            <select id="event-type">
+    <div class="chart-container">
+        <canvas id="barChart" class="chart-canvas"></canvas>
+        <canvas id="lineChart" class="chart-canvas"></canvas>
+        <canvas id="pieChart" class="chart-canvas"></canvas>
+    </div>
+    <div class="table-container">
+        <table id="log-table">
+            <thead>
+                <tr>
+                    <th>Fecha</th>
+                    <th>Hora</th>
+                    <th>Evento</th>
+                </tr>
+            </thead>
+            <tbody id="log-body"></tbody>
+        </table>
+    </div>
+    <div id="previous-cut-form" class="form-container" style="display: none;">
+        <form id="previous-cut-form-content">
+            <label for="prev-date">Fecha:</label>
+            <input type="date" id="prev-date" required>
+            <label for="prev-time">Hora:</label>
+            <input type="time" id="prev-time" required>
+            <label for="prev-event">Evento:</label>
+            <select id="prev-event" required>
                 <option value="Se cortó">Se cortó</option>
                 <option value="Volvió">Volvió</option>
             </select>
-        </div>
-        <div class="form-group">
-            <label for="day">Día:</label>
-            <select id="day">
-                <option value="">Día</option>
-                <!-- Generado dinámicamente por JS -->
-            </select>
-            <label for="month">Mes:</label>
-            <select id="month">
-                <option value="">Mes</option>
-                <!-- Generado dinámicamente por JS -->
-            </select>
-            <label for="year">Año:</label>
-            <select id="year">
-                <option value="">Año</option>
-                <!-- Generado dinámicamente por JS -->
-            </select>
-        </div>
-        <div class="form-group">
-            <label for="hours">Hora:</label>
-            <select id="hours">
-                <option value="">Hora</option>
-                <!-- Generado dinámicamente por JS -->
-            </select>
-            <label for="minutes">Minuto:</label>
-            <select id="minutes">
-                <option value="">Minuto</option>
-                <!-- Generado dinámicamente por JS -->
-            </select>
-        </div>
-        <button id="agregar-corte">Guardar</button>
-        <button id="agregar-vuelta">Cancelar</button>
+            <button type="submit">Guardar</button>
+            <button type="button" id="cancel-form">Cancelar</button>
+        </form>
     </div>
-    <table id="log-table">
-        <thead>
-            <tr>
-                <th>Fecha (Día/Mes/Año)</th>
-                <th>Hora</th>
-                <th>Evento</th>
-            </tr>
-        </thead>
-        <tbody id="log-body"></tbody>
-    </table>
-
-    <script>
-        // Generar opciones para selects
-        function populateSelects() {
-            const daySelect = document.getElementById('day');
-            const monthSelect = document.getElementById('month');
-            const yearSelect = document.getElementById('year');
-            const hoursSelect = document.getElementById('hours');
-            const minutesSelect = document.getElementById('minutes');
-
-            // Días (1-31)
-            for (let i = 1; i <= 31; i++) {
-                const option = document.createElement('option');
-                option.value = i.toString().padStart(2, '0');
-                option.text = i.toString().padStart(2, '0');
-                daySelect.appendChild(option);
-            }
-
-            // Meses (1-12)
-            for (let i = 1; i <= 12; i++) {
-                const option = document.createElement('option');
-                option.value = i.toString().padStart(2, '0');
-                option.text = i.toString().padStart(2, '0');
-                monthSelect.appendChild(option);
-            }
-
-            // Años (2024-2025 por ahora)
-            for (let i = 2024; i <= 2025; i++) {
-                const option = document.createElement('option');
-                option.value = i;
-                option.text = i;
-                yearSelect.appendChild(option);
-            }
-
-            // Horas (0-23)
-            for (let i = 0; i <= 23; i++) {
-                const option = document.createElement('option');
-                option.value = i.toString().padStart(2, '0');
-                option.text = i.toString().padStart(2, '0');
-                hoursSelect.appendChild(option);
-            }
-
-            // Minutos (0-59)
-            for (let i = 0; i <= 59; i++) {
-                const option = document.createElement('option');
-                option.value = i.toString().padStart(2, '0');
-                option.text = i.toString().padStart(2, '0');
-                minutesSelect.appendChild(option);
-            }
-        }
-
-        // Función para registrar un evento
-        function logEvent(eventType, day, month, year, hours, minutes) {
-            const date = `${day}/${month}/${year}`;
-            const time = `${hours}:${minutes}`;
-
-            let logs = JSON.parse(localStorage.getItem('cortes') || '[]');
-            logs.push({ date, time, event: eventType });
-            localStorage.setItem('cortes', JSON.stringify(logs));
-
-            updateTable();
-            hideForm();
-        }
-
-        // Función para actualizar la tabla
-        function updateTable() {
-            const logs = JSON.parse(localStorage.getItem('cortes') || '[]');
-            const tbody = document.getElementById('log-body');
-            tbody.innerHTML = '';
-            logs.forEach(log => {
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td>${log.date}</td>
-                    <td>${log.time}</td>
-                    <td>${log.event}</td>
-                `;
-                tbody.appendChild(row);
-            });
-        }
-
-        // Función para mostrar/ocultar el formulario
-        function toggleForm() {
-            const form = document.getElementById('manual-form');
-            form.classList.toggle('active');
-        }
-
-        function hideForm() {
-            const form = document.getElementById('manual-form');
-            form.classList.remove('active');
-        }
-
-        // Event listeners para los botones
-        document.getElementById('se-corto').addEventListener('click', () => {
-            const now = new Date();
-            const day = now.getDate().toString().padStart(2, '0');
-            const month = (now.getMonth() + 1).toString().padStart(2, '0');
-            const year = now.getFullYear();
-            const hours = now.getHours().toString().padStart(2, '0');
-            const minutes = now.getMinutes().toString().padStart(2, '0');
-            logEvent('Se cortó', day, month, year, hours, minutes);
-        });
-
-        document.getElementById('volvio').addEventListener('click', () => {
-            const now = new Date();
-            const day = now.getDate().toString().padStart(2, '0');
-            const month = (now.getMonth() + 1).toString().padStart(2, '0');
-            const year = now.getFullYear();
-            const hours = now.getHours().toString().padStart(2, '0');
-            const minutes = now.getMinutes().toString().padStart(2, '0');
-            logEvent('Volvió', day, month, year, hours, minutes);
-        });
-
-        document.getElementById('agregar-anterior').addEventListener('click', toggleForm);
-        document.getElementById('agregar-corte').addEventListener('click', () => {
-            const eventType = document.getElementById('event-type').value;
-            const day = document.getElementById('day').value;
-            const month = document.getElementById('month').value;
-            const year = document.getElementById('year').value;
-            const hours = document.getElementById('hours').value;
-            const minutes = document.getElementById('minutes').value;
-
-            if (day && month && year && hours && minutes) {
-                logEvent(eventType, day, month, year, hours, minutes);
-            } else {
-                alert('Por favor, completa todos los campos.');
-            }
-        });
-
-        document.getElementById('agregar-vuelta').addEventListener('click', hideForm);
-
-        // Cargar tabla y selects al iniciar
-        window.onload = () => {
-            populateSelects();
-            updateTable();
-        };
-    </script>
+    <script src="js/script.js"></script>
 </body>
 </html>
