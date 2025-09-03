@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cortes del servicio</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
     <h1>Cortes del servicio</h1>
@@ -21,31 +21,19 @@
     </div>
     <div class="table-container">
         <table id="log-table">
-            <thead>
-                <tr>
-                    <th>Fecha</th>
-                    <th>Hora</th>
-                    <th>Evento</th>
-                </tr>
-            </thead>
+            <thead><tr><th>Fecha</th><th>Hora</th><th>Evento</th></tr></thead>
             <tbody id="log-body"></tbody>
         </table>
     </div>
     <div id="previous-cut-form" class="form-container" style="display: none;">
         <form id="previous-cut-form-content">
-            <label for="prev-date">Fecha:</label>
-            <input type="date" id="prev-date" required>
-            <label for="prev-time">Hora:</label>
-            <input type="time" id="prev-time" required>
+            <label for="prev-date">Fecha:</label><input type="date" id="prev-date" required>
+            <label for="prev-time">Hora:</label><input type="time" id="prev-time" required>
             <label for="prev-event">Evento:</label>
-            <select id="prev-event" required>
-                <option value="Se cortó">Se cortó</option>
-                <option value="Volvió">Volvió</option>
-            </select>
-            <button type="submit">Guardar</button>
-            <button type="button" id="cancel-form">Cancelar</button>
+            <select id="prev-event" required><option value="Se cortó">Se cortó</option><option value="Volvió">Volvió</option></select>
+            <button type="submit">Guardar</button><button type="button" id="cancel-form">Cancelar</button>
         </form>
     </div>
-    <script src="js/script.js"></script>
+    <script src="/js/script.js"></script>
 </body>
 </html>
