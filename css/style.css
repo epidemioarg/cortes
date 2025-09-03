@@ -1,96 +1,68 @@
+body {
+    font-family: Arial;
+    background: #f0f4f8;
+    margin: 20px;
+    text-align: center;
+    max-width: 1200px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+h1 {
+    color: #1e3a8a;
+}
+
 .button-container {
     margin: 10px 0;
-    text-align: center;
 }
 
-button#se-corto {
-    padding: 8px 15px;
-    margin: 0 5px;
-    background-color: #ef4444; /* Rojo para Se cortó */
+button {
+    padding: 10px;
+    margin: 5px;
     color: white;
     border: none;
-    border-radius: 4px;
-    cursor: pointer;
+    border-radius: 5px;
     font-size: 14px;
 }
 
-button#volvio {
-    padding: 8px 15px;
-    margin: 0 5px;
-    background-color: #34d399; /* Verde para Volvió */
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 14px;
+button:hover {
+    opacity: 0.9;
 }
 
-button#add-previous-cut {
-    padding: 8px 15px;
-    margin: 0 5px;
-    background-color: #3b82f6; /* Azul para Agregar corte anterior */
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 14px;
+#se-corto {
+    background: #ef4444;
 }
 
-button#se-corto:hover,
-button#volvio:hover,
-button#add-previous-cut:hover {
-    opacity: 0.9; /* Efecto hover más suave */
+#se-corto:hover {
+    background: #dc2626;
 }
 
-.chart-container {
-    margin: 15px 0;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 15px;
+#volvio {
+    background: #22c55e;
 }
 
-.chart-canvas {
-    width: 100%;
-    height: 300px; /* Reducido de 400px */
-    background-color: #f9fafb; /* Fondo claro */
-    border-radius: 6px;
-    padding: 5px;
+#volvio:hover {
+    background: #16a34a;
 }
 
-.table-container {
-    margin: 15px 0;
-    overflow-x: auto;
+#add-previous-cut {
+    background: #3b82f6;
 }
 
-#log-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 14px;
-}
-
-#log-table th,
-#log-table td {
-    padding: 8px;
-    border: 1px solid #e5e7eb; /* Borde más claro */
-    text-align: left;
-}
-
-#log-table th {
-    background-color: #4a90e2; /* Azul suave para encabezados */
-    color: white;
+#add-previous-cut:hover {
+    background: #2563eb;
 }
 
 .form-container {
     margin: 10px 0;
     padding: 10px;
-    background-color: #f9fafb; /* Fondo claro */
+    background-color: #f9fafb;
     border-radius: 4px;
     display: none;
 }
 
 .form-container label {
     margin-right: 10px;
-    font-size: 14px;
 }
 
 .form-container input,
@@ -98,5 +70,48 @@ button#add-previous-cut:hover {
 .form-container button {
     padding: 6px;
     margin-right: 5px;
+}
+
+.table-container {
+    margin: 20px auto;
+    overflow-x: auto;
+    max-width: 100%;
+}
+
+#log-table {
+    border-collapse: collapse;
     font-size: 14px;
+}
+
+#log-table th,
+#log-table td {
+    padding: 10px;
+    border: 1px solid #ccc;
+    text-align: left;
+}
+
+#log-table th {
+    background-color: #4a90e2;
+    color: white;
+}
+
+.chart-container {
+    margin: 20px auto;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+    max-width: 1000px;
+}
+
+.chart-canvas {
+    width: 100%;
+    height: 250px;
+    background-color: #f9fafb;
+    border-radius: 6px;
+    padding: 5px;
+}
+
+@media (max-width: 480px) {
+    button { font-size: 12px; }
+    .chart-canvas { height: 200px; }
 }
