@@ -14,6 +14,15 @@
         <button id="volvio">Volvió</button>
         <button id="add-previous-cut">Agregar corte anterior</button>
     </div>
+    <div id="previous-cut-form" class="form-container" style="display: none;">
+        <form id="previous-cut-form-content">
+            <label for="prev-date">Fecha:</label><input type="date" id="prev-date" required>
+            <label for="prev-time">Hora:</label><input type="time" id="prev-time" required>
+            <label for="prev-event">Evento:</label>
+            <select id="prev-event" required><option value="Se cortó">Se cortó</option><option value="Volvió">Volvió</option></select>
+            <button type="submit">Guardar</button><button type="button" id="cancel-form">Cancelar</button>
+        </form>
+    </div>
     <div class="table-container">
         <table id="log-table">
             <thead><tr><th>Fecha</th><th>Hora</th><th>Evento</th></tr></thead>
@@ -24,15 +33,6 @@
         <canvas id="barChart" class="chart-canvas"></canvas>
         <canvas id="lineChart" class="chart-canvas"></canvas>
         <canvas id="pieChart" class="chart-canvas"></canvas>
-    </div>
-    <div id="previous-cut-form" class="form-container" style="display: none;">
-        <form id="previous-cut-form-content">
-            <label for="prev-date">Fecha:</label><input type="date" id="prev-date" required>
-            <label for="prev-time">Hora:</label><input type="time" id="prev-time" required>
-            <label for="prev-event">Evento:</label>
-            <select id="prev-event" required><option value="Se cortó">Se cortó</option><option value="Volvió">Volvió</option></select>
-            <button type="submit">Guardar</button><button type="button" id="cancel-form">Cancelar</button>
-        </form>
     </div>
     <script src="js/script.js"></script>
 </body>
