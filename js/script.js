@@ -37,7 +37,7 @@ function loadTable() {
   lastEvents.forEach(event => {
     const row = document.createElement("tr");
     row.innerHTML = `
-      <td>${event.Fecha}</td>
+      <td>${formatDate(event.Fecha)}</td>
       <td>${event.Hora}</td>
       <td>${event.Evento}</td>
       <td>${calculateDuration(event.Fecha, event.Hora, event.Evento)}</td>
@@ -46,15 +46,26 @@ function loadTable() {
   });
 }
 
-// Función para calcular duración
+// Función para formatear la fecha (de YYYY-MM-DD a DD/MM/YYYY)
+function formatDate(dateString) {
+  const parts = dateString.split('-');
+  if (parts.length === 3) {
+    return `${parts[2]}/${parts[1]}/${parts[0]}`;
+  }
+  return dateString;
+}
+
+// Función para calcular duración entre "Se cortó" y "Volvió"
 function calculateDuration(date, time, type) {
   if (type === "Volvió") {
-    const start = events.find(e => e.Fecha === date && e.Evento === "Se cortó");
-    if (start) {
-      const startTime = new Date(`${date}T${start.Hora}`);
+    const startEvent = events.find(e => e.Fecha === date && e.Evento === "Se cortó" && new Date(e.Hora) < new Date(time));
+    if (startEvent) {
+      const startTime = new Date(`${date}T${startEvent.Hora}`);
       const endTime = new Date(`${date}T${time}`);
-      const diff = (endTime - startTime) / (1000 * 60);
-      return `${Math.floor(diff / 60)}h ${diff % 60}m`;
+      const diffMinutes = (endTime - startTime) / (1000 * 60);
+      const hours = Math.floor(diffMinutes / 60);
+      const minutes = Math.floor(diffMinutes % 60);
+      return `${hours}h ${minutes}m`;
     }
   }
   return "-";
@@ -67,7 +78,7 @@ function initCharts() {
   new Chart(barCtx, {
     type: "bar",
     data: {
-      labels: [...new Set(events.map(e => e.Fecha))],
+      labels: [...new Set(events.map(e => formatDate(e.Fecha)))],
       datasets: [{
         label: "Frecuencia de Cortes",
         data: [...new Set(events.map(e => e.Fecha))].map(date =>
@@ -87,21 +98,23 @@ function initCharts() {
   new Chart(lineCtx, {
     type: "line",
     data: {
-      labels: [...new Set(events.map(e => e.Fecha))],
+      labels: [...new Set(events.map(e => formatDate(e.Fecha)))],
       datasets: [{
         label: "Duración Promedio (minutos)",
         data: [...new Set(events.map(e => e.Fecha))].map(date => {
           const cuts = events.filter(e => e.Fecha === date && e.Evento === "Se cortó");
-          const durations = cuts.map(cut => {
+          let totalDuration = 0;
+          let count = 0;
+          cuts.forEach(cut => {
             const back = events.find(e => e.Fecha === date && e.Evento === "Volvió" && new Date(e.Hora) > new Date(cut.Hora));
             if (back) {
               const start = new Date(`${date}T${cut.Hora}`);
               const end = new Date(`${date}T${back.Hora}`);
-              return (end - start) / (1000 * 60);
+              totalDuration += (end - start) / (1000 * 60);
+              count++;
             }
-            return 0;
           });
-          return durations.reduce((a, b) => a + b, 0) / durations.length || 0;
+          return count > 0 ? totalDuration / count : 0;
         }),
         borderColor: "#2196F3",
         fill: false,
@@ -140,7 +153,6 @@ function registerEvent(eventData) {
   const loadingMessage = document.getElementById("loading-message");
   loadingMessage.textContent = "Registrando evento...";
 
-  // Simulamos el registro en Google Sheets
   events.push(eventData);
   loadingMessage.textContent = "Evento registrado. Recargando tabla...";
 
