@@ -86,7 +86,7 @@ canvas {
   height: auto !important;
 }
 
-/* Botones (sin cambio de color) */
+/* Botones con colores específicos */
 .button-group {
   display: flex;
   justify-content: center;
@@ -94,11 +94,22 @@ canvas {
   margin-bottom: 20px;
 }
 
+#cut-button {
+  background-color: #f44336; /* Rojo */
+}
+
+#back-button {
+  background-color: #4CAF50; /* Verde */
+}
+
+#add-manual {
+  background-color: #2196F3; /* Azul */
+}
+
 button {
   padding: 10px 15px;
   border: none;
   border-radius: 4px;
-  background-color: #4CAF50;
   color: white;
   cursor: pointer;
   font-weight: 500;

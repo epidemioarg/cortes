@@ -135,27 +135,19 @@ function initCharts() {
   });
 }
 
-// Función para registrar un evento en Google Sheets
-async function registerEvent(eventData) {
+// Función para registrar un evento
+function registerEvent(eventData) {
   const loadingMessage = document.getElementById("loading-message");
-  loadingMessage.textContent = "Registrando evento en Google Sheets...";
+  loadingMessage.textContent = "Registrando evento...";
 
-  try {
-    // Simulamos el registro en Google Sheets
-    // En un entorno real, aquí iría la lógica para enviar datos a Google Sheets
-    // Por ahora, solo agregamos el evento localmente
-    events.push(eventData);
-    loadingMessage.textContent = "Evento registrado. Recargando tabla...";
+  events.push(eventData);
+  loadingMessage.textContent = "Evento registrado. Recargando tabla...";
 
-    // Simulamos un retraso para reflejar el tiempo de Google Sheets
-    setTimeout(() => {
-      loadTable();
-      initCharts();
-      loadingMessage.textContent = "Tabla actualizada.";
-    }, 2000);
-  } catch (error) {
-    loadingMessage.textContent = "Error al registrar el evento: " + error.message;
-  }
+  setTimeout(() => {
+    loadTable();
+    initCharts();
+    loadingMessage.textContent = "Tabla actualizada.";
+  }, 1000);
 }
 
 // Event listeners para botones

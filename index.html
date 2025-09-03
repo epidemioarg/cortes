@@ -7,7 +7,147 @@
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
-  <link rel="stylesheet" href="style.css">
+  <style>
+    /* CSS integrado temporalmente para evitar el error 404 */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Roboto', Arial, sans-serif;
+      background-color: #f5f7fa;
+      color: #333;
+      line-height: 1.6;
+    }
+
+    .container {
+      width: 95%;
+      max-width: 1200px;
+      margin: 20px auto;
+      padding: 20px;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+      color: #2c3e50;
+    }
+
+    /* Tabla con scroll y encabezado fijo */
+    .table-container {
+      width: 100%;
+      max-height: 300px;
+      overflow-y: auto;
+      margin-bottom: 30px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    thead {
+      position: sticky;
+      top: 0;
+      background: #4CAF50;
+      color: white;
+    }
+
+    th, td {
+      padding: 12px 15px;
+      text-align: center;
+      border: 1px solid #ddd;
+    }
+
+    tr:nth-child(even) {
+      background-color: #f2f2f2;
+    }
+
+    /* Gráficos */
+    .charts-container {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 20px;
+    }
+
+    .chart-box {
+      flex: 1 1 45%;
+      min-width: 300px;
+      max-width: 500px;
+      height: 350px;
+      background: white;
+      border-radius: 5px;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      padding: 10px;
+      margin-bottom: 20px;
+    }
+
+    canvas {
+      width: 100% !important;
+      height: auto !important;
+    }
+
+    /* Botones con colores específicos */
+    .button-group {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    #cut-button {
+      background-color: #f44336; /* Rojo */
+    }
+
+    #back-button {
+      background-color: #4CAF50; /* Verde */
+    }
+
+    #add-manual {
+      background-color: #2196F3; /* Azul */
+    }
+
+    button {
+      padding: 10px 15px;
+      border: none;
+      border-radius: 4px;
+      color: white;
+      cursor: pointer;
+      font-weight: 500;
+    }
+
+    /* Formulario para agregar cortes manuales */
+    .form-container {
+      margin-bottom: 20px;
+      padding: 15px;
+      background: #f9f9f9;
+      border-radius: 5px;
+    }
+
+    .form-container input,
+    .form-container select {
+      padding: 8px;
+      margin-right: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+    }
+
+    /* Mensaje de carga */
+    .loading-message {
+      text-align: center;
+      color: #4CAF50;
+      font-weight: bold;
+      margin: 10px 0;
+    }
+  </style>
 </head>
 <body>
   <div class="container">
@@ -63,6 +203,184 @@
     </div>
   </div>
 
-  <script src="script.js"></script>
+  <script>
+    // Script integrado temporalmente para evitar el error 404
+    const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vR-QYY0OvN7AVVK0UhEEveCHNjeeIueMIdWCY6HwObRuo3m5nuCeRWHxfNcHsuDZVdjeNL2uYH_PzFM/pub?output=csv";
+    let events = [];
+
+    async function loadCSV() {
+      const loadingMessage = document.getElementById("loading-message");
+      loadingMessage.textContent = "Cargando datos desde Google Sheets...";
+
+      try {
+        const response = await fetch(CSV_URL);
+        const csvData = await response.text();
+        Papa.parse(csvData, {
+          header: true,
+          complete: function(results) {
+            events = results.data;
+            loadTable();
+            initCharts();
+            loadingMessage.textContent = "Datos cargados correctamente.";
+          },
+          error: function(error) {
+            loadingMessage.textContent = "Error al cargar los datos: " + error.message;
+          }
+        });
+      } catch (error) {
+        loadingMessage.textContent = "Error al conectar con Google Sheets: " + error.message;
+      }
+    }
+
+    function loadTable() {
+      const tableBody = document.getElementById("events-body");
+      tableBody.innerHTML = "";
+      const lastEvents = events.slice(-10);
+      lastEvents.forEach(event => {
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td>${event.Fecha}</td>
+          <td>${event.Hora}</td>
+          <td>${event.Evento}</td>
+          <td>${calculateDuration(event.Fecha, event.Hora, event.Evento)}</td>
+        `;
+        tableBody.appendChild(row);
+      });
+    }
+
+    function calculateDuration(date, time, type) {
+      if (type === "Volvió") {
+        const start = events.find(e => e.Fecha === date && e.Evento === "Se cortó");
+        if (start) {
+          const startTime = new Date(`${date}T${start.Hora}`);
+          const endTime = new Date(`${date}T${time}`);
+          const diff = (endTime - startTime) / (1000 * 60);
+          return `${Math.floor(diff / 60)}h ${diff % 60}m`;
+        }
+      }
+      return "-";
+    }
+
+    function initCharts() {
+      const barCtx = document.getElementById("bar-chart").getContext("2d");
+      new Chart(barCtx, {
+        type: "bar",
+        data: {
+          labels: [...new Set(events.map(e => e.Fecha))],
+          datasets: [{
+            label: "Frecuencia de Cortes",
+            data: [...new Set(events.map(e => e.Fecha))].map(date =>
+              events.filter(e => e.Fecha === date && e.Evento === "Se cortó").length
+            ),
+            backgroundColor: "#4CAF50",
+          }],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+        },
+      });
+
+      const lineCtx = document.getElementById("line-chart").getContext("2d");
+      new Chart(lineCtx, {
+        type: "line",
+        data: {
+          labels: [...new Set(events.map(e => e.Fecha))],
+          datasets: [{
+            label: "Duración Promedio (minutos)",
+            data: [...new Set(events.map(e => e.Fecha))].map(date => {
+              const cuts = events.filter(e => e.Fecha === date && e.Evento === "Se cortó");
+              const durations = cuts.map(cut => {
+                const back = events.find(e => e.Fecha === date && e.Evento === "Volvió" && new Date(e.Hora) > new Date(cut.Hora));
+                if (back) {
+                  const start = new Date(`${date}T${cut.Hora}`);
+                  const end = new Date(`${date}T${back.Hora}`);
+                  return (end - start) / (1000 * 60);
+                }
+                return 0;
+              });
+              return durations.reduce((a, b) => a + b, 0) / durations.length || 0;
+            }),
+            borderColor: "#2196F3",
+            fill: false,
+          }],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+        },
+      });
+
+      const pieCtx = document.getElementById("pie-chart").getContext("2d");
+      new Chart(pieCtx, {
+        type: "pie",
+        data: {
+          labels: [...new Set(events.map(e => e.Hora.split(":")[0] + ":00"))],
+          datasets: [{
+            data: [...new Set(events.map(e => e.Hora.split(":")[0] + ":00"))].map(hour =>
+              events.filter(e => e.Hora.startsWith(hour)).length
+            ),
+            backgroundColor: [
+              "#FF6384", "#36A2EB", "#FFCE56", "#4BC0C0", "#9966FF", "#FF9F40",
+            ],
+          }],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+        },
+      });
+    }
+
+    function registerEvent(eventData) {
+      const loadingMessage = document.getElementById("loading-message");
+      loadingMessage.textContent = "Registrando evento...";
+
+      events.push(eventData);
+      loadingMessage.textContent = "Evento registrado. Recargando tabla...";
+
+      setTimeout(() => {
+        loadTable();
+        initCharts();
+        loadingMessage.textContent = "Tabla actualizada.";
+      }, 1000);
+    }
+
+    document.getElementById("cut-button").addEventListener("click", () => {
+      const now = new Date();
+      const eventData = {
+        Fecha: now.toISOString().split("T")[0],
+        Hora: now.toTimeString().split(" ")[0].substring(0, 5),
+        Evento: "Se cortó"
+      };
+      registerEvent(eventData);
+    });
+
+    document.getElementById("back-button").addEventListener("click", () => {
+      const now = new Date();
+      const eventData = {
+        Fecha: now.toISOString().split("T")[0],
+        Hora: now.toTimeString().split(" ")[0].substring(0, 5),
+        Evento: "Volvió"
+      };
+      registerEvent(eventData);
+    });
+
+    document.getElementById("add-manual").addEventListener("click", () => {
+      const dateInput = document.getElementById("manual-date").value;
+      const type = document.getElementById("manual-type").value;
+      if (dateInput) {
+        const date = new Date(dateInput);
+        const eventData = {
+          Fecha: date.toISOString().split("T")[0],
+          Hora: date.toTimeString().split(" ")[0].substring(0, 5),
+          Evento: type
+        };
+        registerEvent(eventData);
+      }
+    });
+
+    loadCSV();
+  </script>
 </body>
 </html>
