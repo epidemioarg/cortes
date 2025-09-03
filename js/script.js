@@ -1,5 +1,5 @@
 // URL de la hoja de Google Sheets publicada
-const sheetUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSDKmW7_uOnsVm_DE8z5fUPTp1dySD1bnuK-Gh2-RKjN2Fj9zd-99CwgkQ4kuJlzX-n-g7WRnGcApbd/pubhtml?gid=0&single=true';
+const sheetUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR-QYY0OvN7AVVK0UhEEveCHNjeeIueMIdWCY6HwObRuo3m5nuCeRWHxfNcHsuDZVdjeNL2uYH_PzFM/pubhtml?gid=0&single=true';
 
 // Array local para sincronización temporal
 let localData = [];
