@@ -37,7 +37,7 @@ function loadTable() {
   lastEvents.forEach(event => {
     const row = document.createElement("tr");
     row.innerHTML = `
-      <td>${formatDate(event.Fecha)}</td>
+      <td>${event.Fecha}</td>
       <td>${event.Hora}</td>
       <td>${event.Evento}</td>
       <td>${calculateDuration(event.Fecha, event.Hora, event.Evento)}</td>
@@ -46,11 +46,11 @@ function loadTable() {
   });
 }
 
-// Función para formatear la fecha (de YYYY-MM-DD a DD/MM/YYYY)
-function formatDate(dateString) {
-  const parts = dateString.split('-');
+// Función para convertir fecha de DD/MM/YYYY a YYYY-MM-DD para cálculos
+function formatDateForCalculation(dateString) {
+  const parts = dateString.split('/');
   if (parts.length === 3) {
-    return `${parts[2]}/${parts[1]}/${parts[0]}`;
+    return `${parts[2]}-${parts[1]}-${parts[0]}`;
   }
   return dateString;
 }
@@ -59,15 +59,16 @@ function formatDate(dateString) {
 function calculateDuration(date, time, type) {
   if (type === "Volvió") {
     // Busca el evento "Se cortó" más reciente antes de este "Volvió"
+    const formattedDate = formatDateForCalculation(date);
     const startEvents = events.filter(e =>
-      e.Fecha === date &&
+      formatDateForCalculation(e.Fecha) === formattedDate &&
       e.Evento === "Se cortó" &&
-      new Date(`${date}T${e.Hora}`) < new Date(`${date}T${time}`)
+      new Date(`${formattedDate}T${e.Hora}`) < new Date(`${formattedDate}T${time}`)
     );
     if (startEvents.length > 0) {
       const lastStartEvent = startEvents[startEvents.length - 1];
-      const startTime = new Date(`${date}T${lastStartEvent.Hora}`);
-      const endTime = new Date(`${date}T${time}`);
+      const startTime = new Date(`${formattedDate}T${lastStartEvent.Hora}`);
+      const endTime = new Date(`${formattedDate}T${time}`);
       const diffMinutes = (endTime - startTime) / (1000 * 60);
       const hours = Math.floor(diffMinutes / 60);
       const minutes = Math.floor(diffMinutes % 60);
@@ -84,7 +85,7 @@ function initCharts() {
   new Chart(barCtx, {
     type: "bar",
     data: {
-      labels: [...new Set(events.map(e => formatDate(e.Fecha)))],
+      labels: [...new Set(events.map(e => e.Fecha))],
       datasets: [{
         label: "Frecuencia de Cortes",
         data: [...new Set(events.map(e => e.Fecha))].map(date =>
@@ -104,22 +105,23 @@ function initCharts() {
   new Chart(lineCtx, {
     type: "line",
     data: {
-      labels: [...new Set(events.map(e => formatDate(e.Fecha)))],
+      labels: [...new Set(events.map(e => e.Fecha))],
       datasets: [{
         label: "Duración Promedio (minutos)",
         data: [...new Set(events.map(e => e.Fecha))].map(date => {
-          const cuts = events.filter(e => e.Fecha === date && e.Evento === "Se cortó");
+          const formattedDate = formatDateForCalculation(date);
+          const cuts = events.filter(e => formatDateForCalculation(e.Fecha) === formattedDate && e.Evento === "Se cortó");
           let totalDuration = 0;
           let count = 0;
           cuts.forEach(cut => {
             const back = events.find(e =>
-              e.Fecha === date &&
+              formatDateForCalculation(e.Fecha) === formattedDate &&
               e.Evento === "Volvió" &&
-              new Date(`${date}T${e.Hora}`) > new Date(`${date}T${cut.Hora}`)
+              new Date(`${formattedDate}T${e.Hora}`) > new Date(`${formattedDate}T${cut.Hora}`)
             );
             if (back) {
-              const start = new Date(`${date}T${cut.Hora}`);
-              const end = new Date(`${date}T${back.Hora}`);
+              const start = new Date(`${formattedDate}T${cut.Hora}`);
+              const end = new Date(`${formattedDate}T${back.Hora}`);
               totalDuration += (end - start) / (1000 * 60); // Duración en minutos
               count++;
             }
@@ -182,7 +184,7 @@ function registerEvent(eventData) {
 document.getElementById("cut-button").addEventListener("click", () => {
   const now = new Date();
   const eventData = {
-    Fecha: now.toISOString().split("T")[0],
+    Fecha: now.toISOString().split("T")[0].split('-').reverse().join('/'), // Formato DD/MM/YYYY
     Hora: now.toTimeString().split(" ")[0].substring(0, 5),
     Evento: "Se cortó"
   };
@@ -192,7 +194,7 @@ document.getElementById("cut-button").addEventListener("click", () => {
 document.getElementById("back-button").addEventListener("click", () => {
   const now = new Date();
   const eventData = {
-    Fecha: now.toISOString().split("T")[0],
+    Fecha: now.toISOString().split("T")[0].split('-').reverse().join('/'), // Formato DD/MM/YYYY
     Hora: now.toTimeString().split(" ")[0].substring(0, 5),
     Evento: "Volvió"
   };
@@ -206,7 +208,7 @@ document.getElementById("add-manual").addEventListener("click", () => {
   if (dateInput) {
     const date = new Date(dateInput);
     const eventData = {
-      Fecha: date.toISOString().split("T")[0],
+      Fecha: date.toISOString().split("T")[0].split('-').reverse().join('/'), // Formato DD/MM/YYYY
       Hora: date.toTimeString().split(" ")[0].substring(0, 5),
       Evento: type
     };
