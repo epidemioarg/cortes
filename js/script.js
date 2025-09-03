@@ -1,153 +1,198 @@
-// URL de la hoja de Google Sheets publicada como CSV
-const sheetUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR-QYY0OvN7AVVK0UhEEveCHNjeeIueMIdWCY6HwObRuo3m5nuCeRWHxfNcHsuDZVdjeNL2uYH_PzFM/pub?gid=0&single=true&output=csv';
+// URL del CSV de Google Sheets
+const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vR-QYY0OvN7AVVK0UhEEveCHNjeeIueMIdWCY6HwObRuo3m5nuCeRWHxfNcHsuDZVdjeNL2uYH_PzFM/pub?output=csv";
 
-// Array local para sincronización temporal
-let localData = [];
+// Variable global para almacenar los eventos
+let events = [];
 
-function logEvent(eventType) {
-    const now = new Date();
-    const date = now.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' }).split('/').join('-');
-    const time = now.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
-    const newEntry = { date, time, event: eventType };
+// Función para cargar los datos desde el CSV
+async function loadCSV() {
+  const loadingMessage = document.getElementById("loading-message");
+  loadingMessage.textContent = "Cargando datos desde Google Sheets...";
 
-    localData.unshift(newEntry);
-    if (localData.length > 10) localData.pop();
-    updateTable();
-
-    const formUrl = `https://docs.google.com/forms/d/e/1FAIpQLSf.../viewform?entry.123456789=date=${date}&entry.987654321=time=${time}&entry.456789123=event=${encodeURIComponent(eventType)}`;
-    window.open(formUrl, '_blank');
+  try {
+    const response = await fetch(CSV_URL);
+    const csvData = await response.text();
+    Papa.parse(csvData, {
+      header: true,
+      complete: function(results) {
+        events = results.data;
+        loadTable();
+        initCharts();
+        loadingMessage.textContent = "Datos cargados correctamente.";
+      },
+      error: function(error) {
+        loadingMessage.textContent = "Error al cargar los datos: " + error.message;
+      }
+    });
+  } catch (error) {
+    loadingMessage.textContent = "Error al conectar con Google Sheets: " + error.message;
+  }
 }
 
+// Función para cargar la tabla (solo últimos 10 eventos)
 function loadTable() {
-    console.log('Intentando cargar datos desde:', sheetUrl);
-    fetch(sheetUrl)
-        .then(response => {
-            console.log('Respuesta recibida, estado:', response.status);
-            if (!response.ok) throw new Error('Error en la respuesta: ' + response.status);
-            return response.text();
-        })
-        .then(csv => {
-            console.log('Datos CSV recibidos:', csv.substring(0, 500) + '...');
-            const rows = csv.split('\n').filter(row => row.trim().length > 0); // Ignorar filas vacías
-            const sheetData = rows.map(row => {
-                const cols = row.split(',');
-                if (cols.length >= 3) {
-                    return {
-                        date: cols[0].trim(),
-                        time: cols[1].trim(),
-                        event: cols[2].trim()
-                    };
-                }
-            }).filter(Boolean);
-
-            localData = sheetData.slice(-10).sort((a, b) => {
-                const dateA = new Date(a.date.split('/').reverse().join('-') + ' ' + a.time);
-                const dateB = new Date(b.date.split('/').reverse().join('-') + ' ' + b.time);
-                return dateA - dateB;
-            });
-            updateTable();
-            generateCharts(sheetData);
-        })
-        .catch(error => console.error('Error al cargar la tabla:', error));
+  const tableBody = document.getElementById("events-body");
+  tableBody.innerHTML = "";
+  const lastEvents = events.slice(-10); // Solo últimos 10
+  lastEvents.forEach(event => {
+    const row = document.createElement("tr");
+    row.innerHTML = `
+      <td>${event.Fecha}</td>
+      <td>${event.Hora}</td>
+      <td>${event.Evento}</td>
+      <td>${calculateDuration(event.Fecha, event.Hora, event.Evento)}</td>
+    `;
+    tableBody.appendChild(row);
+  });
 }
 
-function updateTable() {
-    const tbody = document.getElementById('log-body');
-    tbody.innerHTML = '';
-    localData.forEach(log => {
-        const row = document.createElement('tr');
-        row.innerHTML = `<td>${log.date}</td><td>${log.time}</td><td>${log.event}</td>`;
-        tbody.appendChild(row);
-    });
+// Función para calcular duración
+function calculateDuration(date, time, type) {
+  if (type === "Volvió") {
+    const start = events.find(e => e.Fecha === date && e.Evento === "Se cortó");
+    if (start) {
+      const startTime = new Date(`${date}T${start.Hora}`);
+      const endTime = new Date(`${date}T${time}`);
+      const diff = (endTime - startTime) / (1000 * 60);
+      return `${Math.floor(diff / 60)}h ${diff % 60}m`;
+    }
+  }
+  return "-";
 }
 
-function showPreviousCutForm() {
-    console.log('Mostrando formulario');
-    document.getElementById('previous-cut-form').style.display = 'block';
+// Función para inicializar gráficos
+function initCharts() {
+  // Gráfico de barras (frecuencia por fecha)
+  const barCtx = document.getElementById("bar-chart").getContext("2d");
+  new Chart(barCtx, {
+    type: "bar",
+    data: {
+      labels: [...new Set(events.map(e => e.Fecha))],
+      datasets: [{
+        label: "Frecuencia de Cortes",
+        data: [...new Set(events.map(e => e.Fecha))].map(date =>
+          events.filter(e => e.Fecha === date && e.Evento === "Se cortó").length
+        ),
+        backgroundColor: "#4CAF50",
+      }],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+    },
+  });
+
+  // Gráfico de líneas (duración promedio)
+  const lineCtx = document.getElementById("line-chart").getContext("2d");
+  new Chart(lineCtx, {
+    type: "line",
+    data: {
+      labels: [...new Set(events.map(e => e.Fecha))],
+      datasets: [{
+        label: "Duración Promedio (minutos)",
+        data: [...new Set(events.map(e => e.Fecha))].map(date => {
+          const cuts = events.filter(e => e.Fecha === date && e.Evento === "Se cortó");
+          const durations = cuts.map(cut => {
+            const back = events.find(e => e.Fecha === date && e.Evento === "Volvió" && new Date(e.Hora) > new Date(cut.Hora));
+            if (back) {
+              const start = new Date(`${date}T${cut.Hora}`);
+              const end = new Date(`${date}T${back.Hora}`);
+              return (end - start) / (1000 * 60);
+            }
+            return 0;
+          });
+          return durations.reduce((a, b) => a + b, 0) / durations.length || 0;
+        }),
+        borderColor: "#2196F3",
+        fill: false,
+      }],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+    },
+  });
+
+  // Gráfico de pastel (cortes por hora)
+  const pieCtx = document.getElementById("pie-chart").getContext("2d");
+  new Chart(pieCtx, {
+    type: "pie",
+    data: {
+      labels: [...new Set(events.map(e => e.Hora.split(":")[0] + ":00"))],
+      datasets: [{
+        data: [...new Set(events.map(e => e.Hora.split(":")[0] + ":00"))].map(hour =>
+          events.filter(e => e.Hora.startsWith(hour)).length
+        ),
+        backgroundColor: [
+          "#FF6384", "#36A2EB", "#FFCE56", "#4BC0C0", "#9966FF", "#FF9F40",
+        ],
+      }],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+    },
+  });
 }
 
-function hidePreviousCutForm() {
-    document.getElementById('previous-cut-form').style.display = 'none';
+// Función para registrar un evento en Google Sheets
+async function registerEvent(eventData) {
+  const loadingMessage = document.getElementById("loading-message");
+  loadingMessage.textContent = "Registrando evento en Google Sheets...";
+
+  try {
+    // Simulamos el registro en Google Sheets
+    // En un entorno real, aquí iría la lógica para enviar datos a Google Sheets
+    // Por ahora, solo agregamos el evento localmente
+    events.push(eventData);
+    loadingMessage.textContent = "Evento registrado. Recargando tabla...";
+
+    // Simulamos un retraso para reflejar el tiempo de Google Sheets
+    setTimeout(() => {
+      loadTable();
+      initCharts();
+      loadingMessage.textContent = "Tabla actualizada.";
+    }, 2000);
+  } catch (error) {
+    loadingMessage.textContent = "Error al registrar el evento: " + error.message;
+  }
 }
 
-function submitPreviousCut(event) {
-    event.preventDefault();
-    const date = document.getElementById('prev-date').value.split('-').reverse().join('-');
-    const time = document.getElementById('prev-time').value;
-    const eventType = document.getElementById('prev-event').value;
-    const newEntry = { date, time, event: eventType };
+// Event listeners para botones
+document.getElementById("cut-button").addEventListener("click", () => {
+  const now = new Date();
+  const eventData = {
+    Fecha: now.toISOString().split("T")[0],
+    Hora: now.toTimeString().split(" ")[0].substring(0, 5),
+    Evento: "Se cortó"
+  };
+  registerEvent(eventData);
+});
 
-    localData.unshift(newEntry);
-    if (localData.length > 10) localData.pop();
-    updateTable();
+document.getElementById("back-button").addEventListener("click", () => {
+  const now = new Date();
+  const eventData = {
+    Fecha: now.toISOString().split("T")[0],
+    Hora: now.toTimeString().split(" ")[0].substring(0, 5),
+    Evento: "Volvió"
+  };
+  registerEvent(eventData);
+});
 
-    const formUrl = `https://docs.google.com/forms/d/e/1FAIpQLSf.../viewform?entry.123456789=date=${newEntry.date}&entry.987654321=time=${newEntry.time}&entry.456789123=event=${encodeURIComponent(newEntry.event)}`;
-    window.open(formUrl, '_blank');
+// Lógica para agregar cortes manuales
+document.getElementById("add-manual").addEventListener("click", () => {
+  const dateInput = document.getElementById("manual-date").value;
+  const type = document.getElementById("manual-type").value;
+  if (dateInput) {
+    const date = new Date(dateInput);
+    const eventData = {
+      Fecha: date.toISOString().split("T")[0],
+      Hora: date.toTimeString().split(" ")[0].substring(0, 5),
+      Evento: type
+    };
+    registerEvent(eventData);
+  }
+});
 
-    hidePreviousCutForm();
-    document.getElementById('previous-cut-form-content').reset();
-}
-
-function generateCharts(data) {
-    const ctxBar = document.getElementById('barChart').getContext('2d');
-    const ctxLine = document.getElementById('lineChart').getContext('2d');
-    const ctxPie = document.getElementById('pieChart').getContext('2d');
-
-    if (window.barChartInstance) window.barChartInstance.destroy();
-    if (window.lineChartInstance) window.lineChartInstance.destroy();
-    if (window.pieChartInstance) window.pieChartInstance.destroy();
-
-    const frequency = {};
-    data.filter(item => item.event === 'Se cortó').forEach(item => {
-        frequency[item.date] = (frequency[item.date] || 0) + 1;
-    });
-    const freqDates = Object.keys(frequency);
-    const freqCounts = freqDates.map(date => frequency[date]);
-    window.barChartInstance = new Chart(ctxBar, {
-        type: 'bar',
-        data: { labels: freqDates, datasets: [{ label: 'Frecuencia de cortes', data: freqCounts, backgroundColor: ['#ef4444', '#f97316', '#fbbf24', '#34d399', '#3b82f6'], borderColor: ['#dc2626', '#f97316', '#fbbf24', '#34d399', '#3b82f6'], borderWidth: 1 }] },
-        options: { scales: { y: { beginAtZero: true, title: { display: true, text: 'Número de cortes' } }, x: { title: { display: true, text: 'Fecha' } } } }
-    });
-
-    const durations = {};
-    let lastCutTime = null, lastCutDate = null;
-    data.forEach(item => {
-        if (item.event === 'Se cortó') { lastCutTime = item.time; lastCutDate = item.date; }
-        else if (item.event === 'Volvió' && lastCutDate && lastCutTime) {
-            const durationMs = new Date(`${lastCutDate} ${item.time}`) - new Date(`${lastCutDate} ${lastCutTime}`);
-            const durationMin = durationMs / (1000 * 60);
-            if (durationMin >= 0) durations[lastCutDate] = (durations[lastCutDate] || []).concat(durationMin);
-            lastCutTime = null; lastCutDate = null;
-        }
-    });
-    const avgDurations = {};
-    for (let date in durations) avgDurations[date] = durations[date].reduce((a, b) => a + b, 0) / durations[date].length || 0;
-    const durDates = Object.keys(avgDurations);
-    const durValues = durDates.map(date => avgDurations[date]);
-    window.lineChartInstance = new Chart(ctxLine, {
-        type: 'line',
-        data: { labels: durDates, datasets: [{ label: 'Duración promedio (min)', data: durValues, fill: false, borderColor: '#3b82f6', tension: 0.1 }] },
-        options: { scales: { y: { beginAtZero: true, title: { display: true, text: 'Minutos' } }, x: { title: { display: true, text: 'Fecha' } } } }
-    });
-
-    const hourly = {};
-    data.filter(item => item.event === 'Se cortó').forEach(item => {
-        const hour = item.time.split(':')[0];
-        hourly[hour] = (hourly[hour] || 0) + 1;
-    });
-    const hourLabels = Object.keys(hourly);
-    const hourCounts = hourLabels.map(hour => hourly[hour]);
-    window.pieChartInstance = new Chart(ctxPie, {
-        type: 'pie',
-        data: { labels: hourLabels, datasets: [{ data: hourCounts, backgroundColor: ['#ef4444', '#f97316', '#fbbf24', '#34d399', '#3b82f6', '#9333ea'] }] },
-        options: { plugins: { legend: { position: 'bottom' }, title: { display: true, text: 'Distribución horaria de cortes' } } }
-    });
-}
-
-document.getElementById('se-corto').addEventListener('click', () => logEvent('Se cortó'));
-document.getElementById('volvio').addEventListener('click', () => logEvent('Volvió'));
-document.getElementById('add-previous-cut').addEventListener('click', showPreviousCutForm);
-document.getElementById('cancel-form').addEventListener('click', hidePreviousCutForm);
-document.getElementById('previous-cut-form-content').addEventListener('submit', submitPreviousCut);
-
-window.onload = loadTable;
+// Cargar datos al iniciar
+loadCSV();

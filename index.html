@@ -1,39 +1,68 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cortes del servicio</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link rel="stylesheet" href="css/style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Registro de Cortes de Internet</title>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <h1>Cortes del servicio</h1>
-    <div class="button-container">
-        <button id="se-corto">Se cortó</button>
-        <button id="volvio">Volvió</button>
-        <button id="add-previous-cut">Agregar corte anterior</button>
+  <div class="container">
+    <h1>Registro de Cortes de Internet</h1>
+
+    <!-- Botones para registrar eventos -->
+    <div class="button-group">
+      <button id="cut-button">Se Cortó</button>
+      <button id="back-button">Volvió</button>
     </div>
-    <div id="previous-cut-form" class="form-container" style="display: none;">
-        <form id="previous-cut-form-content">
-            <label for="prev-date">Fecha:</label><input type="date" id="prev-date" required>
-            <label for="prev-time">Hora:</label><input type="time" id="prev-time" required>
-            <label for="prev-event">Evento:</label>
-            <select id="prev-event" required><option value="Se cortó">Se cortó</option><option value="Volvió">Volvió</option></select>
-            <button type="submit">Guardar</button><button type="button" id="cancel-form">Cancelar</button>
-        </form>
+
+    <!-- Formulario para agregar cortes manuales -->
+    <div class="form-container">
+      <input type="datetime-local" id="manual-date">
+      <select id="manual-type">
+        <option value="Se cortó">Se cortó</option>
+        <option value="Volvió">Volvió</option>
+      </select>
+      <button id="add-manual">Agregar Corte Manual</button>
     </div>
+
+    <!-- Mensaje de carga -->
+    <div id="loading-message" class="loading-message"></div>
+
+    <!-- Tabla de eventos -->
     <div class="table-container">
-        <table id="log-table">
-            <thead><tr><th>Fecha</th><th>Hora</th><th>Evento</th></tr></thead>
-            <tbody id="log-body"></tbody>
-        </table>
+      <table id="events-table">
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>Hora</th>
+            <th>Evento</th>
+            <th>Duración</th>
+          </tr>
+        </thead>
+        <tbody id="events-body">
+          <!-- Los eventos se cargarán aquí con JavaScript -->
+        </tbody>
+      </table>
     </div>
-    <div class="chart-container">
-        <canvas id="barChart" class="chart-canvas"></canvas>
-        <canvas id="lineChart" class="chart-canvas"></canvas>
-        <canvas id="pieChart" class="chart-canvas"></canvas>
+
+    <!-- Contenedor de gráficos -->
+    <div class="charts-container">
+      <div class="chart-box">
+        <canvas id="bar-chart"></canvas>
+      </div>
+      <div class="chart-box">
+        <canvas id="line-chart"></canvas>
+      </div>
+      <div class="chart-box">
+        <canvas id="pie-chart"></canvas>
+      </div>
     </div>
-    <script src="js/script.js"></script>
+  </div>
+
+  <script src="script.js"></script>
 </body>
 </html>
