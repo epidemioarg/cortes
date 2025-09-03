@@ -140,7 +140,7 @@ function generateCharts(data) {
     window.pieChartInstance = new Chart(ctxPie, {
         type: 'pie',
         data: { labels: hourLabels, datasets: [{ data: hourCounts, backgroundColor: ['#ef4444', '#f97316', '#fbbf24', '#34d399', '#3b82f6', '#9333ea'] }] },
-        options: { plugins: { legend: { position: 'bottom' } } }
+        options: { plugins: { legend: { position: 'bottom' }, title: { display: true, text: 'Distribución horaria de cortes' } } }
     });
 }
 
