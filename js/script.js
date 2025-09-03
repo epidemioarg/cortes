@@ -1,5 +1,5 @@
-// URL de la hoja de Google Sheets publicada
-const sheetUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR-QYY0OvN7AVVK0UhEEveCHNjeeIueMIdWCY6HwObRuo3m5nuCeRWHxfNcHsuDZVdjeNL2uYH_PzFM/pubhtml?gid=0&single=true';
+// URL de la hoja de Google Sheets publicada como CSV
+const sheetUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR-QYY0OvN7AVVK0UhEEveCHNjeeIueMIdWCY6HwObRuo3m5nuCeRWHxfNcHsuDZVdjeNL2uYH_PzFM/pub?gid=0&single=true&output=csv';
 
 // Array local para sincronización temporal
 let localData = [];
@@ -26,40 +26,27 @@ function loadTable() {
             if (!response.ok) throw new Error('Error en la respuesta: ' + response.status);
             return response.text();
         })
-        .then(html => {
-            console.log('Contenido HTML recibido:', html.substring(0, 1000) + '...'); // Mostrar más caracteres
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(html, 'text/html');
-            let table = doc.querySelector('table');
-            if (!table) {
-                // Buscar dentro de posibles contenedores (como divs o iframes)
-                const tablesInDivs = doc.querySelectorAll('div table');
-                if (tablesInDivs.length > 0) table = tablesInDivs[0];
-            }
-            if (table) {
-                const rows = table.querySelectorAll('tbody tr');
-                const sheetData = [];
-                rows.forEach(row => {
-                    const cols = row.querySelectorAll('td');
-                    if (cols.length >= 3) {
-                        sheetData.push({
-                            date: cols[0].textContent.trim(),
-                            time: cols[1].textContent.trim(),
-                            event: cols[2].textContent.trim()
-                        });
-                    }
-                });
+        .then(csv => {
+            console.log('Datos CSV recibidos:', csv.substring(0, 500) + '...');
+            const rows = csv.split('\n').filter(row => row.trim().length > 0); // Ignorar filas vacías
+            const sheetData = rows.map(row => {
+                const cols = row.split(',');
+                if (cols.length >= 3) {
+                    return {
+                        date: cols[0].trim(),
+                        time: cols[1].trim(),
+                        event: cols[2].trim()
+                    };
+                }
+            }).filter(Boolean);
 
-                localData = sheetData.slice(-10).sort((a, b) => {
-                    const dateA = new Date(a.date.split('-').reverse().join('-') + ' ' + a.time);
-                    const dateB = new Date(b.date.split('-').reverse().join('-') + ' ' + b.time);
-                    return dateA - dateB;
-                });
-                updateTable();
-                generateCharts(sheetData);
-            } else {
-                console.warn('No se encontró tabla en la hoja publicada. Verifica la estructura HTML.');
-            }
+            localData = sheetData.slice(-10).sort((a, b) => {
+                const dateA = new Date(a.date.split('/').reverse().join('-') + ' ' + a.time);
+                const dateB = new Date(b.date.split('/').reverse().join('-') + ' ' + b.time);
+                return dateA - dateB;
+            });
+            updateTable();
+            generateCharts(sheetData);
         })
         .catch(error => console.error('Error al cargar la tabla:', error));
 }
