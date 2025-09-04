@@ -4,8 +4,9 @@ const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyTlFDXpXsWzwgCzZ98X
 // URL del CSV de Google Sheets (para lectura)
 const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vR-QYY0OvN7AVVK0UhEEveCHNjeeIueMIdWCY6HwObRuo3m5nuCeRWHxfNcHsuDZVdjeNL2uYH_PzFM/pub?output=csv";
 
-// Variable global para almacenar los eventos
+// Variables globales para almacenar los eventos y los gráficos
 let events = [];
+let barChart, lineChart, pieChart;
 
 // Función para cargar los datos desde el CSV
 async function loadCSV() {
@@ -82,9 +83,14 @@ function calculateDuration(date, time, type) {
 
 // Función para inicializar gráficos
 function initCharts() {
+  // Destruir gráficos existentes si existen
+  if (barChart) barChart.destroy();
+  if (lineChart) lineChart.destroy();
+  if (pieChart) pieChart.destroy();
+
   // Gráfico de barras (frecuencia por fecha)
   const barCtx = document.getElementById("bar-chart").getContext("2d");
-  new Chart(barCtx, {
+  barChart = new Chart(barCtx, {
     type: "bar",
     data: {
       labels: [...new Set(events.map(e => e.Fecha))],
@@ -104,7 +110,7 @@ function initCharts() {
 
   // Gráfico de líneas (duración promedio por día)
   const lineCtx = document.getElementById("line-chart").getContext("2d");
-  new Chart(lineCtx, {
+  lineChart = new Chart(lineCtx, {
     type: "line",
     data: {
       labels: [...new Set(events.map(e => e.Fecha))],
@@ -147,7 +153,7 @@ function initCharts() {
 
   // Gráfico de pastel (cortes por hora)
   const pieCtx = document.getElementById("pie-chart").getContext("2d");
-  new Chart(pieCtx, {
+  pieChart = new Chart(pieCtx, {
     type: "pie",
     data: {
       labels: [...new Set(events.map(e => e.Hora.split(":")[0] + ":00"))],
