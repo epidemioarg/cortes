@@ -1,4 +1,7 @@
-// URL del CSV de Google Sheets
+// URL de la aplicación web de Google Apps Script
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyTlFDXpXsWzwgCzZ98Xu95m7Sapqn3-dKjkhcFbAIIasBGeodU0cfi930ZK9On5wh37Q/exec";
+
+// URL del CSV de Google Sheets (para lectura)
 const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vR-QYY0OvN7AVVK0UhEEveCHNjeeIueMIdWCY6HwObRuo3m5nuCeRWHxfNcHsuDZVdjeNL2uYH_PzFM/pub?output=csv";
 
 // Variable global para almacenar los eventos
@@ -58,7 +61,6 @@ function formatDateForCalculation(dateString) {
 // Función para calcular duración entre "Se cortó" y "Volvió"
 function calculateDuration(date, time, type) {
   if (type === "Volvió") {
-    // Busca el evento "Se cortó" más reciente antes de este "Volvió"
     const formattedDate = formatDateForCalculation(date);
     const startEvents = events.filter(e =>
       formatDateForCalculation(e.Fecha) === formattedDate &&
@@ -122,7 +124,7 @@ function initCharts() {
             if (back) {
               const start = new Date(`${formattedDate}T${cut.Hora}`);
               const end = new Date(`${formattedDate}T${back.Hora}`);
-              totalDuration += (end - start) / (1000 * 60); // Duración en minutos
+              totalDuration += (end - start) / (1000 * 60);
               count++;
             }
           });
@@ -165,19 +167,29 @@ function initCharts() {
   });
 }
 
-// Función para registrar un evento
-function registerEvent(eventData) {
+// Función para registrar un evento en Google Sheets
+async function registerEvent(eventData) {
   const loadingMessage = document.getElementById("loading-message");
-  loadingMessage.textContent = "Registrando evento...";
+  loadingMessage.textContent = "Registrando evento en Google Sheets...";
 
-  events.push(eventData);
-  loadingMessage.textContent = "Evento registrado. Recargando tabla...";
+  try {
+    const response = await fetch(SCRIPT_URL, {
+      method: "POST",
+      mode: "no-cors",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(eventData),
+    });
 
-  setTimeout(() => {
+    // Agregar el evento localmente para mostrarlo inmediatamente
+    events.push(eventData);
     loadTable();
     initCharts();
-    loadingMessage.textContent = "Tabla actualizada.";
-  }, 1000);
+    loadingMessage.textContent = "Evento registrado correctamente.";
+  } catch (error) {
+    loadingMessage.textContent = "Error al registrar el evento: " + error.message;
+  }
 }
 
 // Event listeners para botones
