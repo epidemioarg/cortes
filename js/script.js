@@ -33,12 +33,12 @@ async function loadCSV() {
   }
 }
 
-// Función para cargar la tabla (mostrar últimos 10 eventos primero)
+// Función para cargar la tabla (mostrar los últimos 10 eventos en pantalla, el resto con scroll)
 function loadTable() {
   const tableBody = document.getElementById("events-body");
   tableBody.innerHTML = "";
-  const lastEvents = events.slice(-10).reverse(); // Invertir el orden para mostrar los últimos primero
-  lastEvents.forEach(event => {
+  const sortedEvents = [...events].reverse(); // Ordenar los eventos de más reciente a más antiguo
+  sortedEvents.forEach(event => {
     const row = document.createElement("tr");
     row.innerHTML = `
       <td>${event.Fecha}</td>
@@ -81,14 +81,14 @@ function calculateDuration(date, time, type) {
   return "-";
 }
 
-// Función para inicializar gráficos
+// Función para inicializar gráficos (usando todos los eventos)
 function initCharts() {
   // Destruir gráficos existentes si existen
   if (barChart) barChart.destroy();
   if (lineChart) lineChart.destroy();
   if (pieChart) pieChart.destroy();
 
-  // Gráfico de barras (frecuencia por fecha)
+  // Gráfico de barras (frecuencia por fecha, usando todos los eventos)
   const barCtx = document.getElementById("bar-chart").getContext("2d");
   barChart = new Chart(barCtx, {
     type: "bar",
@@ -108,7 +108,7 @@ function initCharts() {
     },
   });
 
-  // Gráfico de líneas (duración promedio por día)
+  // Gráfico de líneas (duración promedio por día, usando todos los eventos)
   const lineCtx = document.getElementById("line-chart").getContext("2d");
   lineChart = new Chart(lineCtx, {
     type: "line",
@@ -151,7 +151,7 @@ function initCharts() {
     },
   });
 
-  // Gráfico de pastel (cortes por hora)
+  // Gráfico de pastel (cortes por hora, usando todos los eventos)
   const pieCtx = document.getElementById("pie-chart").getContext("2d");
   pieChart = new Chart(pieCtx, {
     type: "pie",
@@ -232,6 +232,13 @@ document.getElementById("add-manual").addEventListener("click", () => {
     };
     registerEvent(eventData);
   }
+});
+
+// Asegurarse de que el contenedor de la tabla tenga un alto fijo y scroll
+document.addEventListener('DOMContentLoaded', function() {
+  const tableContainer = document.querySelector('.table-container');
+  tableContainer.style.maxHeight = '300px'; // Altura fija para mostrar 10 registros
+  tableContainer.style.overflowY = 'auto'; // Scroll vertical
 });
 
 // Cargar datos al iniciar
