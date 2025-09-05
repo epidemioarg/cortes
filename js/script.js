@@ -33,11 +33,11 @@ async function loadCSV() {
   }
 }
 
-// Función para cargar la tabla (solo últimos 10 eventos)
+// Función para cargar la tabla (mostrar últimos 10 eventos primero)
 function loadTable() {
   const tableBody = document.getElementById("events-body");
   tableBody.innerHTML = "";
-  const lastEvents = events.slice(-10); // Solo últimos 10
+  const lastEvents = events.slice(-10).reverse(); // Invertir el orden para mostrar los últimos primero
   lastEvents.forEach(event => {
     const row = document.createElement("tr");
     row.innerHTML = `
