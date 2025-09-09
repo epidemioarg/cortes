@@ -6,9 +6,39 @@
   <title>Registro de Cortes de Internet Min Sal</title>
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.1/dist/echarts.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
   <link rel="stylesheet" href="css/style.css">
-</head>
+<style>
+.chart-container {
+    display: flex;
+    align-items: center;
+    background-color: white;
+    padding: 15px;
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    margin-bottom: 20px;
+}
+
+.pie-chart-container {
+    flex: 1;
+}
+
+.lost-hours-card {
+    flex: 0 0 200px;
+    margin-left: 20px;
+    padding: 15px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    background-color: #f9f9f9;
+    text-align: center;
+}
+
+.lost-hours-card h3 {
+    margin-top: 0;
+    color: #333;
+}
+</style></head>
 <body>
   <div class="container">
     <h1>Registro de Cortes de Internet Min Sal</h1>
