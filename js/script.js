@@ -22,6 +22,7 @@ async function loadCSV() {
         events = results.data;
         loadTable();
         initCharts();
+  updateLostHoursCard(events);
         loadingMessage.textContent = "Datos cargados correctamente.";
       },
       error: function(error) {
@@ -192,6 +193,7 @@ async function registerEvent(eventData) {
     events.push(eventData);
     loadTable();
     initCharts();
+  updateLostHoursCard(events);
     loadingMessage.textContent = "Evento registrado correctamente.";
   } catch (error) {
     loadingMessage.textContent = "Error al registrar el evento: " + error.message;
