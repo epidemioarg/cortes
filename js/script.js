@@ -241,5 +241,31 @@ document.addEventListener('DOMContentLoaded', function() {
   tableContainer.style.overflowY = 'auto'; // Scroll vertical
 });
 
+// Para graficos horas perdidas
+function updateLostHoursCard(data) {
+  let totalMinutes = 0;
+  let count = 0;
+
+  data.forEach(event => {
+    if (event.Evento === 'Volvió') {
+      const duration = calculateDuration(event.Fecha, event.Hora, event.Evento);
+      if (duration) {
+        const [hours, minutes] = duration.split(/[h m]/).filter(Boolean).map(Number);
+        totalMinutes += hours * 60 + minutes;
+        count++;
+      }
+    }
+  });
+
+  const totalHours = Math.floor(totalMinutes / 60);
+  const totalMins = totalMinutes % 60;
+  const averageMinutes = totalMinutes / count;
+  const averageHours = Math.floor(averageMinutes / 60);
+  const averageMins = Math.floor(averageMinutes % 60);
+
+  document.getElementById('total-duration').textContent = `${totalHours}h ${totalMins}m`;
+  document.getElementById('average-duration').textContent = `Promedio: ${averageHours}h ${averageMins}m`;
+}
+
 // Cargar datos al iniciar
 loadCSV();
