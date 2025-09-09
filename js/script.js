@@ -8,6 +8,50 @@ const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vR-QYY0OvN7AVVK
 let events = [];
 let barChart, lineChart, pieChart;
 
+document.addEventListener('DOMContentLoaded', function() {
+  const tableContainer = document.querySelector('.table-container');
+  tableContainer.style.maxHeight = '300px'; // Altura fija para mostrar 10 registros
+  tableContainer.style.overflowY = 'auto'; // Scroll vertical
+
+  // Event listeners para botones
+  document.getElementById("cut-button").addEventListener("click", () => {
+    const now = new Date();
+    const eventData = {
+      Fecha: now.toISOString().split("T")[0].split('-').reverse().join('/'), // Formato DD/MM/YYYY
+      Hora: now.toTimeString().split(" ")[0].substring(0, 5),
+      Evento: "Se cortó"
+    };
+    registerEvent(eventData);
+  });
+
+  document.getElementById("back-button").addEventListener("click", () => {
+    const now = new Date();
+    const eventData = {
+      Fecha: now.toISOString().split("T")[0].split('-').reverse().join('/'), // Formato DD/MM/YYYY
+      Hora: now.toTimeString().split(" ")[0].substring(0, 5),
+      Evento: "Volvió"
+    };
+    registerEvent(eventData);
+  });
+
+  // Lógica para agregar cortes manuales
+  document.getElementById("add-manual").addEventListener("click", () => {
+    const dateInput = document.getElementById("manual-date").value;
+    const type = document.getElementById("manual-type").value;
+    if (dateInput) {
+      const date = new Date(dateInput);
+      const eventData = {
+        Fecha: date.toISOString().split("T")[0].split('-').reverse().join('/'), // Formato DD/MM/YYYY
+        Hora: date.toTimeString().split(" ")[0].substring(0, 5),
+        Evento: type
+      };
+      registerEvent(eventData);
+    }
+  });
+
+  loadCSV();
+});
+
 // Función para cargar los datos desde el CSV
 async function loadCSV() {
   const loadingMessage = document.getElementById("loading-message");
@@ -22,22 +66,21 @@ async function loadCSV() {
         events = results.data;
         loadTable();
         initCharts();
-  updateLostHoursCard(events);
-    let totalMinutes = 0;
-    let count = 0;
-    data.forEach(event => {
-        if (event.Evento === 'Volvió') {
-            const duration = calculateDuration(event.Fecha, event.Hora, event.Evento);
-            if (duration) {
-                const [hours, minutes] = duration.split(/[h m]/).filter(Boolean).map(Number);
-                totalMinutes += hours * 60 + minutes;
-                count++;
+        let totalMinutes = 0;
+        let count = 0;
+        events.forEach(event => {
+            if (event.Evento === 'Volvió') {
+                const duration = calculateDuration(event.Fecha, event.Hora, event.Evento);
+                if (duration) {
+                    const [hours, minutes] = duration.split(/[h m]/).filter(Boolean).map(Number);
+                    totalMinutes += hours * 60 + minutes;
+                    count++;
+                }
             }
-        }
-    });
-    const totalHours = totalMinutes / 60;
-    const averageHours = totalMinutes / 60 / count;
-    initGaugeChart(totalHours, averageHours);
+        });
+        const totalHours = totalMinutes / 60;
+        const averageHours = totalMinutes / 60 / count || 0; // Evitar NaN si count=0
+        initGaugeChart(totalHours, averageHours);
         loadingMessage.textContent = "Datos cargados correctamente.";
       },
       error: function(error) {
@@ -208,10 +251,9 @@ async function registerEvent(eventData) {
     events.push(eventData);
     loadTable();
     initCharts();
-  updateLostHoursCard(events);
     let totalMinutes = 0;
     let count = 0;
-    data.forEach(event => {
+    events.forEach(event => {
         if (event.Evento === 'Volvió') {
             const duration = calculateDuration(event.Fecha, event.Hora, event.Evento);
             if (duration) {
@@ -222,7 +264,7 @@ async function registerEvent(eventData) {
         }
     });
     const totalHours = totalMinutes / 60;
-    const averageHours = totalMinutes / 60 / count;
+    const averageHours = totalMinutes / 60 / count || 0; // Evitar NaN
     initGaugeChart(totalHours, averageHours);
     loadingMessage.textContent = "Evento registrado correctamente.";
   } catch (error) {
@@ -230,210 +272,158 @@ async function registerEvent(eventData) {
   }
 }
 
-// Event listeners para botones
-document.getElementById("cut-button").addEventListener("click", () => {
-  const now = new Date();
-  const eventData = {
-    Fecha: now.toISOString().split("T")[0].split('-').reverse().join('/'), // Formato DD/MM/YYYY
-    Hora: now.toTimeString().split(" ")[0].substring(0, 5),
-    Evento: "Se cortó"
-  };
-  registerEvent(eventData);
-});
-
-document.getElementById("back-button").addEventListener("click", () => {
-  const now = new Date();
-  const eventData = {
-    Fecha: now.toISOString().split("T")[0].split('-').reverse().join('/'), // Formato DD/MM/YYYY
-    Hora: now.toTimeString().split(" ")[0].substring(0, 5),
-    Evento: "Volvió"
-  };
-  registerEvent(eventData);
-});
-
-// Lógica para agregar cortes manuales
-document.getElementById("add-manual").addEventListener("click", () => {
-  const dateInput = document.getElementById("manual-date").value;
-  const type = document.getElementById("manual-type").value;
-  if (dateInput) {
-    const date = new Date(dateInput);
-    const eventData = {
-      Fecha: date.toISOString().split("T")[0].split('-').reverse().join('/'), // Formato DD/MM/YYYY
-      Hora: date.toTimeString().split(" ")[0].substring(0, 5),
-      Evento: type
-    };
-    registerEvent(eventData);
-  }
-});
-
-// Asegurarse de que el contenedor de la tabla tenga un alto fijo y scroll
-document.addEventListener('DOMContentLoaded', function() {
-  const tableContainer = document.querySelector('.table-container');
-  tableContainer.style.maxHeight = '300px'; // Altura fija para mostrar 10 registros
-  tableContainer.style.overflowY = 'auto'; // Scroll vertical
-});
-
 // Para graficos horas perdidas
 function initGaugeChart(totalHours, averageHours) {
     var gaugeChartDom = document.getElementById('gauge-chart');
+    if (!gaugeChartDom) {
+        console.error("El elemento con ID 'gauge-chart' no se encontró.");
+        return;
+    }
     var gaugeChart = echarts.init(gaugeChartDom);
-    var option;
-
-    option = {
-        series: [
-            {
-                type: 'gauge',
-                min: 0,
-                max: 24,
-                splitNumber: 12,
-                radius: '80%',
-                axisLine: {
-                    lineStyle: {
-                        color: [[1, '#f00']],
-                        width: 3
-                    }
-                },
-                splitLine: {
-                    distance: -18,
-                    length: 18,
-                    lineStyle: {
-                        color: '#f00'
-                    }
-                },
-                axisTick: {
-                    distance: -12,
-                    length: 10,
-                    lineStyle: {
-                        color: '#f00'
-                    }
-                },
-                axisLabel: {
-                    distance: -50,
-                    color: '#f00',
-                    fontSize: 12
-                },
-                anchor: {
-                    show: true,
-                    size: 20,
-                    itemStyle: {
-                        borderColor: '#000',
-                        borderWidth: 2
-                    }
-                },
-                pointer: {
-                    offsetCenter: [0, '10%'],
-                    icon: 'path://M2090.36389,615.30999 L2090.36389,615.30999 C2091.48372,615.30999 2092.40383,616.194028 2092.44859,617.312956 L2096.90698,728.755929 C2097.05155,732.369577 2094.2393,735.416212 2090.62566,735.56078 C2090.53845,735.564269 2090.45117,735.566014 2090.36389,735.566014 L2090.36389,735.566014 C2086.74736,735.566014 2083.81557,732.63423 2083.81557,729.017692 C2083.81557,728.930412 2083.81732,728.84314 2083.82081,728.755929 L2088.2792,617.312956 C2088.32396,616.194028 2089.24407,615.30999 2090.36389,615.30999 Z',
-                    length: '115%',
-                    itemStyle: {
-                        color: '#000'
-                    }
-                },
-                detail: {
-                    valueAnimation: true,
-                    precision: 1,
-                    formatter: '{value} HP',
-                    offsetCenter: [0, '30%'],
-                    color: '#000',
-                    fontSize: 20
-                },
-                title: {
-                    offsetCenter: [0, '-50%'],
-                    color: '#000',
-                    fontSize: 16
-                },
-                data: [
-                    {
-                        value: totalHours,
-                        name: 'Horas Perdidas (HP)'
-                    }
-                ]
-            },
-            {
-                type: 'gauge',
-                min: 0,
-                max: 60,
-                splitNumber: 6,
-                axisLine: {
-                    lineStyle: {
-                        color: [[1, '#000']],
-                        width: 3
-                    }
-                },
-                splitLine: {
-                    distance: -3,
-                    length: 18,
-                    lineStyle: {
-                        color: '#000'
-                    }
-                },
-                axisTick: {
-                    distance: 0,
-                    length: 10,
-                    lineStyle: {
-                        color: '#000'
-                    }
-                },
-                axisLabel: {
-                    distance: 10,
-                    fontSize: 12,
-                    color: '#000'
-                },
-                pointer: {
-                    show: false
-                },
-                title: {
-                    show: false
-                },
-                anchor: {
-                    show: true,
-                    size: 14,
-                    itemStyle: {
-                        color: '#000'
-                    }
-                },
-                detail: {
-                    formatter: '{value} min',
-                    offsetCenter: [0, '70%'],
-                    color: '#000',
-                    fontSize: 14
-                },
-                data: [
-                    {
-                        value: averageHours * 60,
-                        name: 'Promedio'
-                    }
-                ]
+    var option = {
+      title: {
+          text: 'Horas Perdidas (HP)',
+          left: 'center',
+          top: '5%',
+          textStyle: {
+              fontSize: 16,
+              color: '#000'
+          }
+      },
+      series: [
+        {
+          type: 'gauge',
+          min: 0,
+          max: 24,
+          splitNumber: 12,
+          radius: '80%',
+          center: ['50%', '64%'], // Subido 1 punto
+          axisLine: {
+            lineStyle: {
+              color: [[1, '#f00']],
+              width: 3
             }
-        ]
+          },
+          splitLine: {
+            distance: -18,
+            length: 18,
+            lineStyle: {
+              color: '#f00'
+            }
+          },
+          axisTick: {
+            distance: -12,
+            length: 10,
+            lineStyle: {
+              color: '#f00'
+            }
+          },
+          axisLabel: {
+            distance: -30,
+            color: '#f00',
+            fontSize: 12
+          },
+          anchor: {
+            show: true,
+            size: 20,
+            itemStyle: {
+              borderColor: '#000',
+              borderWidth: 2
+            }
+          },
+          pointer: {
+            offsetCenter: [0, '10%'],
+            icon: 'path://M2090.36389,615.30999 L2090.36389,615.30999 C2091.48372,615.30999 2092.40383,616.194028 2092.44859,617.312956 L2096.90698,728.755929 C2097.05155,732.369577 2094.2393,735.416212 2090.62566,735.56078 C2090.53845,735.564269 2090.45117,735.566014 2090.36389,735.566014 L2090.36389,735.566014 C2086.74736,735.566014 2083.81557,732.63423 2083.81557,729.017692 C2083.81557,728.930412 2083.81732,728.84314 2083.82081,728.755929 L2088.2792,617.312956 C2088.32396,616.194028 2089.24407,615.30999 2090.36389,615.30999 Z',
+            length: '115%',
+            itemStyle: {
+              color: '#000'
+            }
+          },
+          detail: {
+            valueAnimation: true,
+            precision: 1,
+            offsetCenter: [0, '35%'], // Movido más cerca del centro
+            color: '#000',
+            fontSize: 14,
+            formatter: '{value} HP'
+          },
+          data: [
+            {
+              value: totalHours
+            }
+          ]
+        },
+        {
+          type: 'gauge',
+          min: 0,
+          max: 60,
+          splitNumber: 6,
+          radius: '80%',
+          center: ['50%', '64%'], // Subido 1 punto
+          axisLine: {
+            lineStyle: {
+              color: [[1, '#000']],
+              width: 3
+            }
+          },
+          splitLine: {
+            distance: -3,
+            length: 18,
+            lineStyle: {
+              color: '#000'
+            }
+          },
+          axisTick: {
+            distance: 0,
+            length: 10,
+            lineStyle: {
+              color: '#000'
+            }
+          },
+          axisLabel: {
+            distance: 10,
+            fontSize: 12,
+            color: '#000'
+          },
+          pointer: {
+            show: false
+          },
+          title: {
+            show: false
+          },
+          anchor: {
+            show: true,
+            size: 14,
+            itemStyle: {
+              color: '#000'
+            }
+          },
+          detail: {
+            valueAnimation: true,
+            precision: 0,
+            offsetCenter: [0, '70%'], // Ajustado para que el valor de los minutos se muestre correctamente y no pise el de las horas
+            formatter: function (value) {
+                return `{value|${Math.round(value)} min}\n{average|Promedio}`;
+            },
+            rich: {
+                value: {
+                    fontSize: 12,
+                    color: '#000',
+                },
+                average: {
+                    fontSize: 11,
+                    color: '#000'
+                }
+            }
+          },
+          data: [
+            {
+              value: averageHours * 60 // Multiplicado por 60 para mostrar el valor en minutos
+            }
+          ]
+        }
+      ]
     };
 
     option && gaugeChart.setOption(option);
 }
-
-function updateLostHoursCard(data) {
-  let totalMinutes = 0;
-  let count = 0;
-
-  data.forEach(event => {
-    if (event.Evento === 'Volvió') {
-      const duration = calculateDuration(event.Fecha, event.Hora, event.Evento);
-      if (duration) {
-        const [hours, minutes] = duration.split(/[h m]/).filter(Boolean).map(Number);
-        totalMinutes += hours * 60 + minutes;
-        count++;
-      }
-    }
-  });
-
-  const totalHours = Math.floor(totalMinutes / 60);
-  const totalMins = totalMinutes % 60;
-  const averageMinutes = totalMinutes / count;
-  const averageHours = Math.floor(averageMinutes / 60);
-  const averageMins = Math.floor(averageMinutes % 60);
-
-  document.getElementById('total-duration').textContent = `${totalHours}h ${totalMins}m`;
-  document.getElementById('average-duration').textContent = `Promedio: ${averageHours}h ${averageMins}m`;
-}
-
-// Cargar datos al iniciar
-loadCSV();
