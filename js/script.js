@@ -1,62 +1,66 @@
 // URL de la aplicación web de Google Apps Script
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyTlFDXpXsWzwgCzZ98Xu95m7Sapqn3-dKjkhcFbAIIasBGeodU0cfi930ZK9On5wh37Q/exec";
-
 // URL del CSV de Google Sheets (para lectura)
 const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vR-QYY0OvN7AVVK0UhEEveCHNjeeIueMIdWCY6HwObRuo3m5nuCeRWHxfNcHsuDZVdjeNL2uYH_PzFM/pub?output=csv";
-
+// Flag para habilitar/deshabilitar el registro de nuevos eventos
+const ENABLE_REGISTRATION = false; // Cambia a true para habilitar el registro en el futuro
 // Variables globales para almacenar los eventos y los gráficos
 let events = [];
 let barChart, lineChart, pieChart;
-
 document.addEventListener('DOMContentLoaded', function() {
   const tableContainer = document.querySelector('.table-container');
   tableContainer.style.maxHeight = '300px'; // Altura fija para mostrar 10 registros
   tableContainer.style.overflowY = 'auto'; // Scroll vertical
-
-  // Event listeners para botones
-  document.getElementById("cut-button").addEventListener("click", () => {
-    const now = new Date();
-    const eventData = {
-      Fecha: now.toISOString().split("T")[0].split('-').reverse().join('/'), // Formato DD/MM/YYYY
-      Hora: now.toTimeString().split(" ")[0].substring(0, 5),
-      Evento: "Se cortó"
-    };
-    registerEvent(eventData);
-  });
-
-  document.getElementById("back-button").addEventListener("click", () => {
-    const now = new Date();
-    const eventData = {
-      Fecha: now.toISOString().split("T")[0].split('-').reverse().join('/'), // Formato DD/MM/YYYY
-      Hora: now.toTimeString().split(" ")[0].substring(0, 5),
-      Evento: "Volvió"
-    };
-    registerEvent(eventData);
-  });
-
-  // Lógica para agregar cortes manuales
-  document.getElementById("add-manual").addEventListener("click", () => {
-    const dateInput = document.getElementById("manual-date").value;
-    const type = document.getElementById("manual-type").value;
-    if (dateInput) {
-      const date = new Date(dateInput);
+  // Event listeners para botones (solo si el registro está habilitado)
+  if (ENABLE_REGISTRATION) {
+    document.getElementById("cut-button").addEventListener("click", () => {
+      const now = new Date();
       const eventData = {
-        Fecha: date.toISOString().split("T")[0].split('-').reverse().join('/'), // Formato DD/MM/YYYY
-        Hora: date.toTimeString().split(" ")[0].substring(0, 5),
-        Evento: type
+        Fecha: now.toISOString().split("T")[0].split('-').reverse().join('/'), // Formato DD/MM/YYYY
+        Hora: now.toTimeString().split(" ")[0].substring(0, 5),
+        Evento: "Se cortó"
       };
       registerEvent(eventData);
-    }
-  });
-
+    });
+    document.getElementById("back-button").addEventListener("click", () => {
+      const now = new Date();
+      const eventData = {
+        Fecha: now.toISOString().split("T")[0].split('-').reverse().join('/'), // Formato DD/MM/YYYY
+        Hora: now.toTimeString().split(" ")[0].substring(0, 5),
+        Evento: "Volvió"
+      };
+      registerEvent(eventData);
+    });
+    // Lógica para agregar cortes manuales
+    document.getElementById("add-manual").addEventListener("click", () => {
+      const dateInput = document.getElementById("manual-date").value;
+      const type = document.getElementById("manual-type").value;
+      if (dateInput) {
+        const date = new Date(dateInput);
+        const eventData = {
+          Fecha: date.toISOString().split("T")[0].split('-').reverse().join('/'), // Formato DD/MM/YYYY
+          Hora: date.toTimeString().split(" ")[0].substring(0, 5),
+          Evento: type
+        };
+        registerEvent(eventData);
+      }
+    });
+  } else {
+    // Deshabilitar botones visualmente si el registro no está habilitado
+    document.getElementById("cut-button").disabled = true;
+    document.getElementById("back-button").disabled = true;
+    document.getElementById("add-manual").disabled = true;
+    // Opcional: Mostrar un mensaje o cambiar texto de botones
+    document.getElementById("cut-button").textContent = "Registro Deshabilitado";
+    document.getElementById("back-button").textContent = "Registro Deshabilitado";
+    document.getElementById("add-manual").textContent = "Registro Deshabilitado";
+  }
   loadCSV();
 });
-
 // Función para cargar los datos desde el CSV
 async function loadCSV() {
   const loadingMessage = document.getElementById("loading-message");
   loadingMessage.textContent = "Cargando datos desde Google Sheets...";
-
   try {
     const response = await fetch(CSV_URL);
     const csvData = await response.text();
@@ -91,7 +95,6 @@ async function loadCSV() {
     loadingMessage.textContent = "Error al conectar con Google Sheets: " + error.message;
   }
 }
-
 // Función para cargar la tabla (mostrar los últimos 10 eventos en pantalla, el resto con scroll)
 function loadTable() {
   const tableBody = document.getElementById("events-body");
@@ -108,7 +111,6 @@ function loadTable() {
     tableBody.appendChild(row);
   });
 }
-
 // Función para convertir fecha de DD/MM/YYYY a YYYY-MM-DD para cálculos
 function formatDateForCalculation(dateString) {
   const parts = dateString.split('/');
@@ -117,7 +119,6 @@ function formatDateForCalculation(dateString) {
   }
   return dateString;
 }
-
 // Función para calcular duración entre "Se cortó" y "Volvió"
 function calculateDuration(date, time, type) {
   if (type === "Volvió") {
@@ -139,14 +140,12 @@ function calculateDuration(date, time, type) {
   }
   return "-";
 }
-
 // Función para inicializar gráficos (usando todos los eventos)
 function initCharts() {
   // Destruir gráficos existentes si existen
   if (barChart) barChart.destroy();
   if (lineChart) lineChart.destroy();
   if (pieChart) pieChart.destroy();
-
   // Gráfico de barras (frecuencia por fecha, usando todos los eventos)
   const barCtx = document.getElementById("bar-chart").getContext("2d");
   barChart = new Chart(barCtx, {
@@ -166,7 +165,6 @@ function initCharts() {
       maintainAspectRatio: false,
     },
   });
-
   // Gráfico de líneas (duración promedio por día, usando todos los eventos)
   const lineCtx = document.getElementById("line-chart").getContext("2d");
   lineChart = new Chart(lineCtx, {
@@ -209,7 +207,6 @@ function initCharts() {
       }
     },
   });
-
   // Gráfico de pastel (cortes por hora, usando todos los eventos)
   const pieCtx = document.getElementById("pie-chart").getContext("2d");
   pieChart = new Chart(pieCtx, {
@@ -231,12 +228,15 @@ function initCharts() {
     },
   });
 }
-
-// Función para registrar un evento en Google Sheets
+// Función para registrar un evento en Google Sheets (solo si está habilitado)
 async function registerEvent(eventData) {
+  if (!ENABLE_REGISTRATION) {
+    const loadingMessage = document.getElementById("loading-message");
+    loadingMessage.textContent = "El registro de eventos está deshabilitado actualmente.";
+    return; // No hacer nada si el registro no está habilitado
+  }
   const loadingMessage = document.getElementById("loading-message");
   loadingMessage.textContent = "Registrando evento en Google Sheets...";
-
   try {
     const response = await fetch(SCRIPT_URL, {
       method: "POST",
@@ -246,7 +246,6 @@ async function registerEvent(eventData) {
       },
       body: JSON.stringify(eventData),
     });
-
     // Agregar el evento localmente para mostrarlo inmediatamente
     events.push(eventData);
     loadTable();
@@ -271,7 +270,6 @@ async function registerEvent(eventData) {
     loadingMessage.textContent = "Error al registrar el evento: " + error.message;
   }
 }
-
 // Para graficos horas perdidas
 function initGaugeChart(totalHours, averageHours) {
     var gaugeChartDom = document.getElementById('gauge-chart');
@@ -424,6 +422,5 @@ function initGaugeChart(totalHours, averageHours) {
         }
       ]
     };
-
     option && gaugeChart.setOption(option);
 }
